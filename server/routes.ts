@@ -2,11 +2,19 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { upvoteSchema } from "@shared/schema";
-import { z } from "zod";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Initialize database and seed data if needed
+  if (storage.seedInitialData) {
+    try {
+      console.log("Initializing database and seeding initial data...");
+      await storage.seedInitialData();
+      console.log("Database initialization completed");
+    } catch (error) {
+      console.error("Failed to initialize database:", error);
+    }
+  }
 
   // Get memes with pagination
   app.get("/api/memes", async (req, res) => {
@@ -81,6 +89,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error upvoting meme:", error);
       res.status(500).json({ message: "Failed to upvote meme" });
+    }
+  });
+
+  // API health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Test database connection
+      await db.select({ now: db.sql`now()` }).execute();
+      res.json({ status: "ok", db: "connected" });
+    } catch (error) {
+      console.error("Health check failed:", error);
+      res.status(500).json({ status: "error", message: "Database connection failed" });
     }
   });
 
