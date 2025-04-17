@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, MessageSquare, Share } from "lucide-react";
+import { ArrowUp, Share } from "lucide-react";
 import { type Meme } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -16,7 +16,6 @@ export function MemeCard({ meme }: MemeCardProps) {
   const [localUpvotes, setLocalUpvotes] = useState(meme.upvotes);
   const [isAnimating, setIsAnimating] = useState(false);
   
-  // Format upvote number for display
   const formatUpvotes = (count: number) => {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;
@@ -24,7 +23,6 @@ export function MemeCard({ meme }: MemeCardProps) {
     return count.toString();
   };
   
-  // Format time for display
   const formatTime = (date: Date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true });
   };
@@ -35,20 +33,16 @@ export function MemeCard({ meme }: MemeCardProps) {
     setIsUpvoting(true);
     setIsAnimating(true);
     
-    // Optimistic update
     setLocalUpvotes(prevCount => prevCount + 1);
     
     try {
       await apiRequest("POST", "/api/memes/upvote", { memeId: meme.id });
-      // Invalidate the cache for this meme
       queryClient.invalidateQueries({ queryKey: ["/api/memes"] });
     } catch (error) {
-      // Revert on error
       setLocalUpvotes(meme.upvotes);
       console.error("Failed to upvote:", error);
     } finally {
       setIsUpvoting(false);
-      // Reset animation after a delay
       setTimeout(() => setIsAnimating(false), 300);
     }
   };
@@ -62,16 +56,11 @@ export function MemeCard({ meme }: MemeCardProps) {
         </div>
       </CardHeader>
       
-      <div className="p-3">
-        <h3 className="font-semibold text-neutral-900 dark:text-neutral-50 mb-2">{meme.title}</h3>
-        {meme.text && <p className="text-neutral-700 dark:text-neutral-300">{meme.text}</p>}
-      </div>
-      
       <div className={meme.mediaType === "image" ? "image-container" : "video-container"}>
         {meme.mediaType === "image" ? (
           <img 
             src={meme.mediaUrl} 
-            alt={meme.title}
+            alt={meme.source || "Meme image"}
             className="transition-opacity duration-300"
             loading="lazy"
           />
@@ -100,15 +89,6 @@ export function MemeCard({ meme }: MemeCardProps) {
             className={`h-5 w-5 ${isAnimating ? 'text-primary upvote-animate' : 'group-hover:text-primary transition-colors'}`} 
           />
           <span className="font-medium">{formatUpvotes(localUpvotes)}</span>
-        </Button>
-        
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="flex items-center space-x-1 mr-4 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50 p-0"
-        >
-          <MessageSquare className="h-5 w-5" />
-          <span className="text-sm">{meme.comments}</span>
         </Button>
         
         <Button 
