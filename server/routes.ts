@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { upvoteSchema } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database and seed data if needed
@@ -96,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", async (req, res) => {
     try {
       // Test database connection
-      await db.select({ now: db.sql`now()` }).execute();
+      await pool.query('SELECT NOW()');
       res.json({ status: "ok", db: "connected" });
     } catch (error) {
       console.error("Health check failed:", error);
